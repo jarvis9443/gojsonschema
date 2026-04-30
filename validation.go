@@ -94,6 +94,17 @@ func (v *subSchema) validateRecursive(currentSubSchema *subSchema, currentNode i
 		return
 	}
 
+	// skip_validation hook: if provided and returns true, accept the value as-is
+	if currentSubSchema.skipValidation != nil && currentNode != nil {
+		schemaType := ""
+		if currentSubSchema.types.IsTyped() {
+			schemaType = strings.Join(currentSubSchema.types.types, ",")
+		}
+		if currentSubSchema.skipValidation(currentNode, schemaType) {
+			return
+		}
+	}
+
 	// Check for null value
 	if currentNode == nil {
 		if currentSubSchema.types.IsTyped() && !currentSubSchema.types.Contains(TYPE_NULL) {

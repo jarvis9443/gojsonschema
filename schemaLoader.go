@@ -23,10 +23,11 @@ import (
 
 // SchemaLoader is used to load schemas
 type SchemaLoader struct {
-	pool       *schemaPool
-	AutoDetect bool
-	Validate   bool
-	Draft      Draft
+	pool           *schemaPool
+	AutoDetect     bool
+	Validate       bool
+	Draft          Draft
+	SkipValidation SkipValidationFunc
 }
 
 // NewSchemaLoader creates a new NewSchemaLoader
@@ -157,6 +158,7 @@ func (sl *SchemaLoader) Compile(rootSchema JSONLoader) (*Schema, error) {
 	d.pool.jsonLoaderFactory = rootSchema.LoaderFactory()
 	d.documentReference = ref
 	d.referencePool = newSchemaReferencePool()
+	d.skipValidation = sl.SkipValidation
 
 	var doc interface{}
 	if ref.String() != "" {

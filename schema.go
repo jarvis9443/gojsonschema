@@ -50,16 +50,25 @@ func NewSchema(l JSONLoader) (*Schema, error) {
 	return NewSchemaLoader().Compile(l)
 }
 
+// SkipValidationFunc is called during validation for each value.
+// If it returns true, the value is accepted without further constraint checks.
+// Parameters: value is the JSON value being validated, schemaType is the schema
+// type information: a single type keyword such as "string" or "integer", an
+// empty string if untyped, or a comma-joined list such as "string,integer" for
+// multi-type schemas.
+type SkipValidationFunc func(value interface{}, schemaType string) bool
+
 // Schema holds a schema
 type Schema struct {
 	documentReference gojsonreference.JsonReference
 	rootSchema        *subSchema
 	pool              *schemaPool
 	referencePool     *schemaReferencePool
+	skipValidation    SkipValidationFunc
 }
 
 func (d *Schema) parse(document interface{}, draft Draft) error {
-	d.rootSchema = &subSchema{property: STRING_ROOT_SCHEMA_PROPERTY, draft: &draft}
+	d.rootSchema = &subSchema{property: STRING_ROOT_SCHEMA_PROPERTY, draft: &draft, skipValidation: d.skipValidation}
 	return d.parseSchema(document, d.rootSchema)
 }
 
@@ -81,6 +90,11 @@ func (d *Schema) parseSchema(documentNode interface{}, currentSchema *subSchema)
 			return errors.New("Draft not set")
 		}
 		currentSchema.draft = currentSchema.parent.draft
+	}
+
+	// Propagate skipValidation from parent
+	if currentSchema.skipValidation == nil && currentSchema.parent != nil {
+		currentSchema.skipValidation = currentSchema.parent.skipValidation
 	}
 
 	// As of draft 6 "true" is equivalent to an empty schema "{}" and false equals "{"not":{}}"

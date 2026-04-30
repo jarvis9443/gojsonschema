@@ -146,4 +146,7 @@ type subSchema struct {
 	_if   *subSchema // if/else are golang keywords
 	_then *subSchema
 	_else *subSchema
+
+	// skip validation hook (propagated from root)
+	skipValidation SkipValidationFunc
 }
